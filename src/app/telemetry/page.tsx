@@ -155,7 +155,7 @@ export default function TelemetryDashboard() {
             {logs.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-600 space-y-2">
                 <Terminal className="h-8 w-8 stroke-[1.5] text-slate-800" />
-                <p>System cluster dormant. Awaiting streaming network ingest input payload...</p>
+                <p>Awaiting corporate enrichment target...</p>
               </div>
             ) : (
               logs.map((log) => {

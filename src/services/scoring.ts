@@ -26,11 +26,14 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
     // Higher scores given to companies using modern technical infrastructure matching our target profiles
     const targetKeywords = ['next.js', 'typescript', 'postgresql', 'react', 'supabase'];
     
+    // Explicit lowercase conversion to guarantee accurate data mapping
     techStack.forEach((tech) => {
-      if (targetKeywords.includes(tech.toLowerCase())) {
-        leadScore += 12; // Boost score for highly compatible tech stack items
+      const cleanTech = tech.toLowerCase().trim();
+      if (targetKeywords.includes(cleanTech)) {
+        leadScore += 14; 
       }
     });
+  
 
     // Enforce an absolute operational ceiling score of 100
     if (leadScore > 100) leadScore = 100;
