@@ -23,7 +23,7 @@ export async function runExtractionStep(jobId: string, companyName: string, rawT
 
     // 2. Call OpenAI utilizing explicit JSON structural enforcement
     const response = await openai.chat.completions.create({
-      model: 'gpt-5.4-mini',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
