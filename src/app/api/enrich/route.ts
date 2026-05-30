@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { processEnrichmentPipeline } from '@/services/queue';
+import { waitUntil } from '@vercel/functions';
 
-// Tells Vercel to allow this specific route handler to execute for up to 60 seconds
-export const maxDuration = 60;
+export const maxDuration = 60; // Allows the extended execution window to scale smoothly
 
 export async function POST(request: Request) {
   try {
@@ -39,15 +39,14 @@ export async function POST(request: Request) {
       }
     ]);
 
-    // 4. FIRE THE PIPELINE ASYNCHRONOUSLY
-    // By intentional design, we do not use 'await' here. 
-    // This allows the background workers to execute completely in the background 
-    // while we instantly return a response to the user's dashboard interface.
-    try {
-        await processEnrichmentPipeline(job.id, cleanCompany);
-      } catch (err) {
+    // 4. WEAPONIZE BACKGROUND EXECUTION VIA WAITUNTIL
+    // This instructs Vercel to hold the container open in the background 
+    // to execute our multi-step pipeline completely, while allowing the response below to fire instantly.
+    waitUntil(
+      processEnrichmentPipeline(job.id, cleanCompany).catch((err) => {
         console.error(`Uncaught background worker failure on Job ${job.id}:`, err);
-      }
+      })
+    );
 
     // 5. Return instant 202 Accepted status containing tracking details
     return NextResponse.json({
