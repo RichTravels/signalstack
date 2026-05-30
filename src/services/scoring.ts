@@ -9,7 +9,6 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
   const startTime = Date.now();
 
   try {
-    // 1. Log the initiation of our business logic calculation step
     await supabase.from('pipeline_telemetry').insert([
       {
         job_id: jobId,
@@ -20,28 +19,30 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
       }
     ]);
 
-    // 2. Execute concrete business logic scoring rules (No AI hallucination here!)
-    let leadScore = 30; // Base score for any operational entity
+    // 1. Establish core base parameters
+    let leadScore = 30; 
+    const targetKeywords = ['next.js', 'typescript', 'postgresql', 'react', 'supabase', 'ios', 'swift', 'cloud'];
+    const premiumEntities = ['apple', 'stripe', 'vercel', 'google', 'microsoft', 'amazon'];
+
+    // 2. High-Value Global Firm Multiplier Check
+    if (premiumEntities.includes(companyName.toLowerCase().trim())) {
+      leadScore += 40; // Give automatic baseline premium credit to tier-1 targets
+    }
     
-    // Higher scores given to companies using modern technical infrastructure matching our target profiles
-    const targetKeywords = ['next.js', 'typescript', 'postgresql', 'react', 'supabase'];
-    
-    // Explicit lowercase conversion to guarantee accurate data mapping
+    // 3. Match array technology variables cleanly
     techStack.forEach((tech) => {
       const cleanTech = tech.toLowerCase().trim();
       if (targetKeywords.includes(cleanTech)) {
-        leadScore += 14; 
+        leadScore += 15; 
       }
     });
-  
 
-    // Enforce an absolute operational ceiling score of 100
+    // 4. Operational limits safeguard caps
     if (leadScore > 100) leadScore = 100;
 
-    const confidencePercentage = 0.95; // 95% certainty based on explicit rule evaluation
+    const confidencePercentage = 0.95; 
     const executionTime = Date.now() - startTime;
 
-    // 3. Log successful metric generation
     await supabase.from('pipeline_telemetry').insert([
       {
         job_id: jobId,
@@ -59,7 +60,6 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
 
   } catch (error: any) {
     const executionTime = Date.now() - startTime;
-
     await supabase.from('pipeline_telemetry').insert([
       {
         job_id: jobId,
@@ -69,7 +69,6 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
         execution_time_ms: executionTime
       }
     ]);
-
     throw error;
   }
 }
