@@ -2,7 +2,7 @@
 
 An asynchronous B2B lead enrichment pipeline that takes a raw company name, runs it through a multi-step AI research and scoring engine, and streams every step to a real-time observability dashboard.
 
-**🔗 Live Demo:** [signalstack-pearl.vercel.app/telemetry](https://vercel.app)
+**🔗 Live Demo:** [https://signalstack-pearl.vercel.app/telemetry](https://vercel.app)
 
 ---
 
@@ -11,12 +11,13 @@ An asynchronous B2B lead enrichment pipeline that takes a raw company name, runs
 ### Live Systems Telemetry Panel
 Below is the live dark-mode platform interface mapping incoming asynchronous request footprints in real time:
 
-![SignalStack Telemetry UI Dashboard](https://github.com)
+![SignalStack Telemetry UI Dashboard](./public/screenshots/dashboard-preview.png)
 
 ### Multi-Step Pipeline Execution Sequence
 This console display captures our event-driven worker engine successfully resolving background operations sequentially:
 
-![SignalStack Successful Pipeline Stream](https://github.com)
+![SignalStack Successful Pipeline Stream](./public/screenshots/pipeline-success.png)
+
 
 ---
 
