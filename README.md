@@ -2,7 +2,8 @@
 
 An asynchronous B2B lead enrichment pipeline that takes a raw company name, runs it through a multi-step AI research and scoring engine, and streams every step to a real-time observability dashboard.
 
-**🔗 Live Demo:** [https://signalstack-pearl.vercel.app/telemetry](https://vercel.app)
+**🔗 Live Demo:** [https://signalstack-pearl.vercel.app/telemetry](https://signalstack-pearl.vercel.app/telemetry)
+
 
 ---
 
