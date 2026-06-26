@@ -1,200 +1,252 @@
-# SignalStack ⚡
+# SignalStack
 
-An asynchronous B2B lead enrichment pipeline that takes a raw company name, runs it through a multi-step AI research and scoring engine, and streams every step to a real-time observability dashboard.
+**B2B lead enrichment pipeline with real-time observability** — submit a company name, get an AI-scored lead profile back, and watch every pipeline step stream live to a telemetry dashboard.
 
-**🔗 Live Demo:** [https://signalstack-pearl.vercel.app/telemetry](https://signalstack-pearl.vercel.app/telemetry)
+[![Live Demo](https://img.shields.io/badge/demo-live-teal?style=for-the-badge)](https://signalstack-pearl.vercel.app/telemetry)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?style=flat-square&logo=openai)](https://openai.com/)
 
-
----
-
-## 📷 Visual Previews
-
-### Live Systems Telemetry Panel
-Below is the live dark-mode platform interface mapping incoming asynchronous request footprints in real time:
-
-![SignalStack Telemetry UI Dashboard](./public/screenshots/dashboard-preview.png)
-
-### Multi-Step Pipeline Execution Sequence
-This console display captures our event-driven worker engine successfully resolving background operations sequentially:
-
-![SignalStack Successful Pipeline Stream](./public/screenshots/pipeline-success.png)
-
+**Live demo:** [signalstack-pearl.vercel.app/telemetry](https://signalstack-pearl.vercel.app/telemetry)
 
 ---
 
-## The Problem It Solves
+## At a glance
 
-Sales teams waste hours manually researching companies before outreach. SignalStack automates that process — input a company name, and the pipeline autonomously researches the company, extracts its tech stack profile, scores the lead, and writes the result to a database. Every step is logged in real time so operators can see exactly what the system is doing and why.
+| | |
+|---|---|
+| **Problem** | Sales teams spend hours manually researching prospects before outreach. |
+| **Solution** | An async pipeline that researches a company, extracts structured signals with AI, scores the lead, and persists results — with full step-by-step visibility. |
+| **Who it's for** | RevOps, SDR teams, and platform engineers building enrichment workflows. |
+| **Project type** | Production-inspired portfolio demo — showcases async API design, structured AI output, and observability patterns. |
 
 ---
 
-## Architecture
+## Screenshots
 
-SignalStack uses a decoupled, event-driven pattern designed for reliability and observability.
+**Telemetry dashboard** — submit a company and watch pipeline steps stream in real time:
+
+![SignalStack Telemetry Dashboard](./public/screenshots/dashboard-preview.png)
+
+**Successful pipeline run** — research → extraction → scoring → persistence:
+
+![SignalStack Pipeline Success](./public/screenshots/pipeline-success.png)
+
+---
+
+## How it works
 
 ```
-POST /api/enrich { company: "Acme Corp" }
-        ↓
-  [Ingestion Route] → validates payload, returns 202 Accepted immediately
-        ↓
-  [Background Queue] → fires asynchronously, no thread blocking
-        ↓
-  [Research Step] → fetches company data
-        ↓
-  [Extraction Step] → OpenAI structured JSON parsing
-        ↓
-  [Scoring Step] → deterministic lead score (0–100) + confidence %
-        ↓
-  [DB Write] → idempotent upsert to Supabase (enrichment_jobs)
-        ↓
-  [Telemetry Log] → every step timed and persisted (pipeline_telemetry)
+POST /api/enrich  { "company": "Acme Corp" }
+        │
+        ▼
+  Ingestion (202 Accepted immediately)
+        │
+        ▼
+  Background worker (Vercel waitUntil)
+        │
+        ├── Research   → gather company context
+        ├── Extraction → OpenAI structured JSON parsing
+        ├── Scoring    → deterministic lead score (0–100)
+        └── Persist    → upsert to Supabase
+        │
+        ▼
+  Telemetry logs written at every step → dashboard polls & displays
 ```
 
-The frontend long-polls the telemetry table and streams each step to the terminal dashboard in real time.
+1. Client POSTs a company name to `/api/enrich`.
+2. API creates a job record and returns `202 Accepted` with a `jobId` — no blocking on AI latency.
+3. A background worker runs the multi-step pipeline via Vercel's `waitUntil`.
+4. Each step writes to `pipeline_telemetry`; the dashboard polls Supabase and renders a live terminal UI.
+
+Try it from the CLI:
+
+```bash
+curl -X POST https://signalstack-pearl.vercel.app/api/enrich \
+  -H "Content-Type: application/json" \
+  -d '{"company": "Stripe"}'
+```
 
 ---
 
-## Tech Stack
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15, TypeScript, Tailwind CSS |
-| Backend | Node.js, TypeScript, Vercel Edge Functions |
-| AI Orchestration | OpenAI SDK (structured JSON output) |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Backend | Next.js Route Handlers, Vercel Functions (`waitUntil`) |
+| AI | OpenAI SDK — GPT-4o with JSON mode |
 | Database | Supabase (PostgreSQL) |
 | Deployment | Vercel |
 
 ---
 
-## Key Engineering Features
+## What this demonstrates
 
-### 1. Non-Blocking Async Pipeline
-The `/api/enrich` route validates the incoming payload and immediately returns a `202 Accepted` response. The full enrichment job runs in the background via an unawaited queue runner — the client never waits on AI processing time.
+Useful signals for engineering and platform hiring:
 
-### 2. Real-Time Observability Dashboard
-Every pipeline step (EXTRACTION, SCORING, ORCHESTRATION) is written to a `pipeline_telemetry` Postgres table with timestamps and status. The frontend streams these logs to a live terminal UI, giving operators full visibility into the system's behavior — not just the final output.
-
-### 3. Structured AI Output
-The OpenAI integration uses strict JSON mode to enforce schema-compliant responses. Raw unstructured data is extracted into typed fields before any scoring logic runs, preventing downstream failures from malformed AI output.
-
-### 4. State Machine Job Tracking
-Each enrichment job moves through explicit states: `pending → processing → completed`. State transitions are written to the `enrichment_jobs` table, making every job auditable and recoverable.
-
-### 5. Rate Limiting & Retry Handling
-The pipeline includes graceful error handling for API failures. On rate limit errors, the system logs the retry attempt to Postgres and waits before re-queuing — preventing cascading failures under load.
+- **Non-blocking async APIs** — instant `202` response while long-running work continues in the background
+- **Structured AI integration** — schema-enforced JSON extraction before downstream logic runs
+- **Observability-first design** — every pipeline step timed, logged, and surfaced in a live UI
+- **Explicit job state machine** — `pending → processing → completed | failed`
+- **Idempotent writes** — enriched leads upserted on `company_name` to avoid duplicates
+- **Separation of concerns** — ingestion, queue orchestration, research, extraction, and scoring in dedicated modules
 
 ---
 
-## Database Schema
+## Quick start
 
-```sql
--- Tracks each enrichment job and its result
-CREATE TABLE enrichment_jobs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_name TEXT NOT NULL,
-  status job_status DEFAULT 'pending',
-  lead_score INTEGER,
-  confidence NUMERIC,
-  tech_stack JSONB,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+### Prerequisites
 
--- Writes a telemetry log entry at every pipeline step
-CREATE TABLE pipeline_telemetry (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id UUID REFERENCES enrichment_jobs(id) ON DELETE CASCADE,
-  step TEXT NOT NULL,
-  message TEXT NOT NULL,
-  duration_ms INTEGER,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
+- Node.js 20+
+- A [Supabase](https://supabase.com/) project
+- An [OpenAI API key](https://platform.openai.com/)
 
----
-
-## Running Locally
+### 1. Clone and install
 
 ```bash
-git clone https://github.com/yourusername/signalstack
+git clone https://github.com/RichTravels/signalstack.git
 cd signalstack
 npm install
 ```
 
-Create a `.env.local` file:
+### 2. Configure environment
 
-```env
-OPENAI_API_KEY=your_key_here
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+Copy the example file and fill in your keys:
+
+```bash
+cp .env.local.example .env.local
 ```
+
+| Variable | Required | Description |
+|---|---|---|
+| `OPENAI_API_KEY` | Yes | OpenAI API key for the extraction step |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon/public key (used by API and dashboard) |
+
+### 3. Set up the database
+
+Run the following in the Supabase SQL Editor:
+
+```sql
+-- Job lifecycle tracking
+CREATE TYPE job_status AS ENUM ('pending', 'processing', 'completed', 'failed');
+
+CREATE TABLE enrichment_jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_name TEXT NOT NULL,
+  status job_status DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Step-by-step pipeline telemetry
+CREATE TABLE pipeline_telemetry (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID REFERENCES enrichment_jobs(id) ON DELETE CASCADE,
+  step_name TEXT NOT NULL,
+  log_level TEXT NOT NULL DEFAULT 'INFO',
+  message TEXT NOT NULL,
+  execution_time_ms INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enriched lead output (idempotent on company_name)
+CREATE TABLE enriched_leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  job_id UUID REFERENCES enrichment_jobs(id) ON DELETE SET NULL,
+  company_name TEXT NOT NULL UNIQUE,
+  tech_stack JSONB,
+  recent_news TEXT,
+  lead_score INTEGER,
+  confidence_percentage NUMERIC,
+  processed_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_telemetry_job_id ON pipeline_telemetry(job_id);
+CREATE INDEX idx_enrichment_jobs_status ON enrichment_jobs(status);
+```
+
+For local development, enable read/write access on these tables via Supabase Row Level Security policies (or disable RLS on a dev project).
+
+### 4. Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000/telemetry](http://localhost:3000/telemetry)
+Open [http://localhost:3000/telemetry](http://localhost:3000/telemetry), enter a company name, and watch the pipeline execute.
 
 ---
 
-## Project Structure
+## Deployment (Vercel)
+
+1. Push the repo to GitHub and import it in [Vercel](https://vercel.com/new).
+2. Add the three environment variables from `.env.local.example` to the Vercel project settings.
+3. Deploy — the live app runs at `/telemetry`; the API is at `/api/enrich`.
+4. Ensure the same Supabase schema exists in your production database.
+
+The enrich route sets `maxDuration = 60` to allow the background pipeline to complete within Vercel's function window.
+
+---
+
+## Project structure
 
 ```
 signalstack/
 ├── src/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── enrich/
-│   │   │       └── route.ts        # Ingestion endpoint
-│   │   └── telemetry/
-│   │       └── page.tsx            # Observability dashboard
+│   │   ├── api/enrich/route.ts   # Ingestion endpoint (202 + waitUntil)
+│   │   ├── telemetry/page.tsx      # Live observability dashboard
+│   │   └── page.tsx                # Redirects to /telemetry
 │   ├── services/
-│   │   ├── queue.ts                # Async pipeline runner
+│   │   ├── queue.ts                # Pipeline orchestrator
 │   │   ├── research.ts             # Company research step
 │   │   ├── extraction.ts           # OpenAI structured extraction
 │   │   └── scoring.ts              # Lead scoring logic
 │   └── lib/
-│       └── supabase.ts             # Database client
+│       ├── supabase.ts             # Supabase client
+│       └── openai.ts               # OpenAI client
+├── public/screenshots/             # README preview images
 ├── .env.local.example
 └── README.md
 ```
 
 ---
 
-## Git Workflow
+## Engineering notes
 
-This project follows a feature-branch workflow to simulate professional team development:
+### Research step (demo)
 
-- All features developed on isolated branches (`feature/core-clients`, `feature/ai-extraction`, `feature/ai-scoring`)
-- Each branch merged via Pull Request with documented descriptions
-- No direct commits to `main`
+The research step currently uses **simulated scraped data** with a fixed latency delay. In a production deployment, this would be replaced with a real data source (web scraping, Clearbit, Apollo, etc.). The rest of the pipeline — structured extraction, scoring, persistence, and telemetry — runs against live OpenAI and Supabase.
+
+### Polling vs. WebSockets
+
+The dashboard polls Supabase every 1.5s rather than using WebSockets or SSE. This keeps the stack simple and is adequate for low-volume telemetry. SSE or Supabase Realtime would be the natural next step for lower latency.
+
+### Error handling
+
+Pipeline failures mark the job as `failed` and write a `CRITICAL` telemetry entry so the UI stops spinning. OpenAI and JSON parsing errors are caught per-step with structured error logs.
 
 ---
 
-## Engineering Tradeoffs
+## Roadmap (production gaps)
 
-### Why polling instead of WebSockets?
+Items that would move this from portfolio demo to production-ready:
 
-Long-polling was chosen deliberately for this implementation:
+- [ ] Real company data source (replace mock research)
+- [ ] Supabase migrations in-repo (`supabase/migrations/`)
+- [ ] CI pipeline (lint, typecheck, build on PR)
+- [ ] API authentication and rate limiting
+- [ ] Unit/integration integration tests for scoring and extraction
+- [ ] Supabase Realtime or SSE for live telemetry
+- [ ] LICENSE file and GitHub repo description/topics
 
-- Simpler deployment model
-- Fewer moving parts
-- Easier debugging
-- Adequate for low-volume telemetry workloads
-
-A future iteration could migrate to Server-Sent Events (SSE) or WebSockets
-for lower latency and reduced polling overhead.
+---
 
 ## About
 
-SignalStack is production-inspired AI operations platform focused on
-asynchronous enrichment pipelines, observability, and structured AI
-workflows.
+Built by [Rich Travels](https://github.com/RichTravels) to explore production-style patterns: async job queues, AI orchestration, telemetry, and resilient serverless execution.
 
-The project was built to explore production-style patterns including
-queue processing, telemetry, state-machine orchestration, and resilient
-AI integrations.
-
-**Portfolio:** [your portfolio link]  
-**LinkedIn:** [your LinkedIn]
+**Repo:** [github.com/RichTravels/signalstack](https://github.com/RichTravels/signalstack)
