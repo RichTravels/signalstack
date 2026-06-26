@@ -70,8 +70,10 @@ const rawJsonString = response.choices[0]?.message?.content;
       recentNews
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const executionTime = Date.now() - startTime;
+    const errorMessage =
+      error instanceof Error ? error.message : 'JSON schema parsing conflict';
 
     // 5. Catch and document specific API or JSON parsing runtime errors
     await supabase.from('pipeline_telemetry').insert([
@@ -79,7 +81,7 @@ const rawJsonString = response.choices[0]?.message?.content;
         job_id: jobId,
         step_name: 'EXTRACTION',
         log_level: 'ERROR',
-        message: `AI node extraction failed: ${error?.message || 'JSON schema parsing conflict'}`,
+        message: `AI node extraction failed: ${errorMessage}`,
         execution_time_ms: executionTime
       }
     ]);

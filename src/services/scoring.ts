@@ -58,14 +58,16 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
       confidencePercentage
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const executionTime = Date.now() - startTime;
+    const errorMessage =
+      error instanceof Error ? error.message : 'Mathematical overflow error';
     await supabase.from('pipeline_telemetry').insert([
       {
         job_id: jobId,
         step_name: 'SCORING',
         log_level: 'ERROR',
-        message: `Scoring routine calculation failed: ${error?.message || 'Mathematical overflow error'}`,
+        message: `Scoring routine calculation failed: ${errorMessage}`,
         execution_time_ms: executionTime
       }
     ]);

@@ -48,8 +48,10 @@ export async function runResearchStep(jobId: string, companyName: string): Promi
       rawScrapedText: mockScrapedPayload
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     const executionTime = Date.now() - startTime;
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown network anomaly';
     
     // 5. System level failure monitoring log
     await supabase.from('pipeline_telemetry').insert([
@@ -57,7 +59,7 @@ export async function runResearchStep(jobId: string, companyName: string): Promi
         job_id: jobId,
         step_name: 'RESEARCH',
         log_level: 'ERROR',
-        message: `Scraping execution halted: ${error?.message || 'Unknown network anomaly'}`,
+        message: `Scraping execution halted: ${errorMessage}`,
         execution_time_ms: executionTime
       }
     ]);

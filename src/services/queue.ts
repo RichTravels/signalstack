@@ -52,8 +52,10 @@ export async function processEnrichmentPipeline(jobId: string, companyName: stri
       }
     ]);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Pipeline execution crash on Job ${jobId}:`, error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Internal logic error';
 
     // Critical Fallback: Ensure the job is marked as 'failed' in the database so the UI stops spinning
     await supabase
@@ -66,7 +68,7 @@ export async function processEnrichmentPipeline(jobId: string, companyName: stri
         job_id: jobId,
         step_name: 'ORCHESTRATION',
         log_level: 'CRITICAL',
-        message: `Pipeline aborted due to unhandled crash: ${error?.message || 'Internal logic error'}`,
+        message: `Pipeline aborted due to unhandled crash: ${errorMessage}`,
         execution_time_ms: 0
       }
     ]);
