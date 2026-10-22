@@ -1,34 +1,38 @@
-import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface ResearchResult {
   companyName: string;
   rawScrapedText: string;
+  simulated: true;
 }
 
-export async function runResearchStep(jobId: string, companyName: string): Promise<ResearchResult> {
+const SAMPLE_PARAGRAPH = `
+  This company is an enterprise technology provider specializing in cloud infrastructure, B2B software solutions, and automated workflows.
+  Recent corporate filings indicate an active tech stack conversion migrating heavily toward Next.js frameworks, TypeScript microservices, and PostgreSQL backends.
+  Industry press releases confirm they recently secured an expansion round to scale operations globally and are aggressively hiring technical staff to automate internal operational workflows.
+`.trim();
+
+export async function runResearchStep(
+  supabase: SupabaseClient,
+  jobId: string,
+  companyName: string
+): Promise<ResearchResult> {
   const startTime = Date.now();
   
   try {
-    // 1. Log the step initialization to Postgres Telemetry
     await supabase.from('pipeline_telemetry').insert([
       {
         job_id: jobId,
         step_name: 'RESEARCH',
         log_level: 'INFO',
-        message: `Querying global datasets and simulating web scraping nodes for: "${companyName}"`,
+        message: `Demo research for "${companyName}": waiting 1.5s, then returning the shared sample paragraph. No website or dataset is queried.`,
         execution_time_ms: 0
       }
     ]);
 
-    // 2. Simulate network latency of real-world scraping (1.5 seconds)
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // 3. High-Fidelity Mock Data (Simulating a rich payload scraped from the web)
-    const mockScrapedPayload = `
-      ${companyName} is an enterprise technology provider specializing in cloud infrastructure, B2B software solutions, and automated workflows. 
-      Recent corporate filings indicate an active tech stack conversion migrating heavily toward Next.js frameworks, TypeScript microservices, and PostgreSQL backends.
-      Industry press releases confirm they recently secured an expansion round to scale operations globally and are aggressively hiring technical staff to automate internal operational workflows.
-    `.trim();
+    const mockScrapedPayload = `Demo sample for ${companyName}. ${SAMPLE_PARAGRAPH}`;
 
     const executionTime = Date.now() - startTime;
 
@@ -38,14 +42,15 @@ export async function runResearchStep(jobId: string, companyName: string): Promi
         job_id: jobId,
         step_name: 'RESEARCH',
         log_level: 'INFO',
-        message: `Successfully extracted 412 bytes of core unstructured text. Alpha signals verified.`,
+        message: `Demo research finished for "${companyName}". The paragraph is a fixed sample and is the same for every company.`,
         execution_time_ms: executionTime
       }
     ]);
 
     return {
       companyName,
-      rawScrapedText: mockScrapedPayload
+      rawScrapedText: mockScrapedPayload,
+      simulated: true,
     };
 
   } catch (error: unknown) {
@@ -59,7 +64,7 @@ export async function runResearchStep(jobId: string, companyName: string): Promi
         job_id: jobId,
         step_name: 'RESEARCH',
         log_level: 'ERROR',
-        message: `Scraping execution halted: ${errorMessage}`,
+        message: `Demo research step failed: ${errorMessage}`,
         execution_time_ms: executionTime
       }
     ]);
