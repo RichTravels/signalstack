@@ -1,12 +1,17 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { openai } from '@/lib/openai';
-import { supabase } from '@/lib/supabase';
 
 export interface ExtractedSignals {
   techStack: string[];
   recentNews: string;
 }
 
-export async function runExtractionStep(jobId: string, companyName: string, rawText: string): Promise<ExtractedSignals> {
+export async function runExtractionStep(
+  supabase: SupabaseClient,
+  jobId: string,
+  companyName: string,
+  rawText: string
+): Promise<ExtractedSignals> {
   const startTime = Date.now();
 
   try {
@@ -16,7 +21,7 @@ export async function runExtractionStep(jobId: string, companyName: string, rawT
         job_id: jobId,
         step_name: 'EXTRACTION',
         log_level: 'INFO',
-        message: `Deploying OpenAI NLP processing node to extract structured data signatures...`,
+        message: `Sending the simulated research paragraph for "${companyName}" to OpenAI for field extraction.`,
         execution_time_ms: 0
       }
     ]);
@@ -60,7 +65,7 @@ const rawJsonString = response.choices[0]?.message?.content;
         job_id: jobId,
         step_name: 'EXTRACTION',
         log_level: 'INFO',
-        message: `AI processing complete. Successfully mapped ${techStack.length} architectural tags into data pipeline.`,
+        message: `OpenAI finished. Mapped ${techStack.length} tags from the simulated sample paragraph.`,
         execution_time_ms: executionTime
       }
     ]);

@@ -16,7 +16,7 @@ const siteUrl = "https://signalstack-pearl.vercel.app";
 
 const title = "SignalStack — AI Enrichment Pipeline";
 const description =
-  "Automate B2B prospect research with AI. Submit a company name, extract structured tech signals, score the lead, and stream every pipeline step to a live telemetry dashboard.";
+  "Demo B2B enrichment pipeline with simulated company research, OpenAI extraction, and a live telemetry view. Sign-in required.";
 
 export const metadata: Metadata = {
   title,

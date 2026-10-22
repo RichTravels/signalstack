@@ -1,11 +1,15 @@
-import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface ScoringResult {
   leadScore: number;
-  confidencePercentage: number;
 }
 
-export async function runScoringStep(jobId: string, companyName: string, techStack: string[]): Promise<ScoringResult> {
+export async function runScoringStep(
+  supabase: SupabaseClient,
+  jobId: string,
+  companyName: string,
+  techStack: string[]
+): Promise<ScoringResult> {
   const startTime = Date.now();
 
   try {
@@ -14,7 +18,7 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
         job_id: jobId,
         step_name: 'SCORING',
         log_level: 'INFO',
-        message: `Analyzing technological stack compatibility against operational scoring vectors...`,
+        message: `Scoring tech tags taken from the simulated sample for "${companyName}".`,
         execution_time_ms: 0
       }
     ]);
@@ -40,7 +44,6 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
     // 4. Operational limits safeguard caps
     if (leadScore > 100) leadScore = 100;
 
-    const confidencePercentage = 0.95; 
     const executionTime = Date.now() - startTime;
 
     await supabase.from('pipeline_telemetry').insert([
@@ -48,14 +51,13 @@ export async function runScoringStep(jobId: string, companyName: string, techSta
         job_id: jobId,
         step_name: 'SCORING',
         log_level: 'INFO',
-        message: `Metrics calculated smoothly. Final Score: ${leadScore}/100. Confidence: 95%.`,
+        message: `Lead score ${leadScore}/100, calculated from the simulated sample.`,
         execution_time_ms: executionTime
       }
     ]);
 
     return {
       leadScore,
-      confidencePercentage
     };
 
   } catch (error: unknown) {

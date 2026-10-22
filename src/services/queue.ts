@@ -1,9 +1,14 @@
-import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { runResearchStep } from './research';
 import { runExtractionStep } from './extraction';
 import { runScoringStep } from './scoring';
 
-export async function processEnrichmentPipeline(jobId: string, companyName: string) {
+export async function processEnrichmentPipeline(
+  supabase: SupabaseClient,
+  jobId: string,
+  companyName: string,
+  userId: string
+) {
   try {
     // 1. Update primary job status to 'processing'
     await supabase
@@ -12,13 +17,18 @@ export async function processEnrichmentPipeline(jobId: string, companyName: stri
       .eq('id', jobId);
 
     // 2. Step 1: Research & Scraping
-    const researchData = await runResearchStep(jobId, companyName);
+    const researchData = await runResearchStep(supabase, jobId, companyName);
 
     // 3. Step 2: AI Natural Language Processing Extraction
-    const extractedSignals = await runExtractionStep(jobId, companyName, researchData.rawScrapedText);
+    const extractedSignals = await runExtractionStep(
+      supabase,
+      jobId,
+      companyName,
+      researchData.rawScrapedText
+    );
 
     // 4. Step 3: Algorithmic Scoring Computation
-    const scores = await runScoringStep(jobId, companyName, extractedSignals.techStack);
+    const scores = await runScoringStep(supabase, jobId, companyName, extractedSignals.techStack);
 
     // 5. Final Step: Save the completely enriched lead record to Postgres
     const { error: upsertError } = await supabase
@@ -27,11 +37,12 @@ export async function processEnrichmentPipeline(jobId: string, companyName: stri
         job_id: jobId,
         company_name: companyName,
         tech_stack: extractedSignals.techStack,
-        recent_news: extractedSignals.recentNews,
+        recent_news: `Demo sample: ${extractedSignals.recentNews}`,
         lead_score: scores.leadScore,
-        confidence_percentage: scores.confidencePercentage,
+        confidence_percentage: null,
+        user_id: userId,
         processed_at: new Date().toISOString()
-      }, { onConflict: 'company_name' }); // Guarantees system idempotency
+      }, { onConflict: 'user_id,company_name' });
 
     if (upsertError) throw upsertError;
 
@@ -47,7 +58,7 @@ export async function processEnrichmentPipeline(jobId: string, companyName: stri
         job_id: jobId,
         step_name: 'ORCHESTRATION',
         log_level: 'INFO',
-        message: `Pipeline completed successfully. Lead metrics persisted cleanly. Pipeline shutting down.`,
+        message: `Pipeline finished. Saved a lead scored from the simulated research sample.`,
         execution_time_ms: 0
       }
     ]);
